@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MauiScannetwork.Features.Network.NetworkPage"
+             Title="Network">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="15">
+
+            <Button x:Name="BtnCheck"
+                    Text="CHECK"
+                    Clicked="OnCheckClicked"
+                    BackgroundColor="#2196F3"
+                    TextColor="White"
+                    FontAttributes="Bold"
+                    CornerRadius="8"
+                    HeightRequest="50"
+                    HorizontalOptions="Fill" />
+
+            <BoxView HeightRequest="1" Color="#CCCCCC" />
+
+            <Label x:Name="LblResult"
+                   Text="Nhan Check de quet mang..."
+                   FontSize="16"
+                   TextColor="Gray" />
+
+            <BoxView HeightRequest="1" Color="#CCCCCC" />
+
+            <VerticalStackLayout x:Name="NetworkDetailsPanel" IsVisible="False" Spacing="12">
+
+                <Frame BackgroundColor="#FF2A95E2" CornerRadius="10" Padding="15">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="WIFI" FontAttributes="Bold" FontSize="18" TextColor="White" />
+                        <Label x:Name="LblWifiIp" Text="IP: --" FontSize="14" />
+                        <Label x:Name="LblWifiSubnet" Text="Subnet: --" FontSize="14" />
+                        <Label x:Name="LblWifiGateway" Text="Gateway: --" FontSize="14" />
+                        <Label x:Name="LblWifiDns" Text="DNS: --" FontSize="14" />
+                        <Label x:Name="LblWifiStatus" Text="Trang thai: --" FontSize="14" TextColor="White" />
+                    </VerticalStackLayout>
+                </Frame>
+
+                <Frame BackgroundColor="#FF065C0D" CornerRadius="10" Padding="15">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="MOBILE DATA" FontAttributes="Bold" FontSize="18" TextColor="White" />
+                        <Label x:Name="LblMobileIp" Text="IP: --" FontSize="14" />
+                        <Label x:Name="LblMobileSubnet" Text="Subnet: --" FontSize="14" />
+                        <Label x:Name="LblMobileGateway" Text="Gateway: --" FontSize="14" />
+                        <Label x:Name="LblMobileDns" Text="DNS: --" FontSize="14" />
+                        <Label x:Name="LblMobileStatus" Text="Trang thai: --" FontSize="14" TextColor="White" />
+                    </VerticalStackLayout>
+                </Frame>
+
+                <Frame BackgroundColor="#FF835409" CornerRadius="10" Padding="15">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="USB-C / LAN" FontAttributes="Bold" FontSize="18" TextColor="White" />
+                        <Label x:Name="LblUsbIp" Text="IP: --" FontSize="14" />
+                        <Label x:Name="LblUsbSubnet" Text="Subnet: --" FontSize="14" />
+                        <Label x:Name="LblUsbGateway" Text="Gateway: --" FontSize="14" />
+                        <Label x:Name="LblUsbDns" Text="DNS: --" FontSize="14" />
+                        <Label x:Name="LblUsbStatus" Text="Trang thai: --" FontSize="14" TextColor="White" />
+                    </VerticalStackLayout>
+                </Frame>
+
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

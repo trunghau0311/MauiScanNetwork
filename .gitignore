@@ -1,0 +1,16 @@
+## .NET / MAUI build output
+bin/
+obj/
+publish/
+*.user
+*.suo
+.vs/
+
+## IDE / editor
+.vs/
+.idea/
+*.user
+
+## LibVLC / native
+*.apk
+*.aab

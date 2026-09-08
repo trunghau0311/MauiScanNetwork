@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="MauiScannetwork.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:MauiScannetwork"
+    xmlns:network="clr-namespace:MauiScannetwork.Features.Network"
+    xmlns:camera="clr-namespace:MauiScannetwork.Features.Camera"
+    xmlns:nmap="clr-namespace:MauiScannetwork.Features.Nmap"
+    xmlns:diag="clr-namespace:MauiScannetwork.Features.Diagnostics"
+    FlyoutBehavior="Flyout"
+    Title="MauiScannetwork">
+
+    <FlyoutItem Title="Dashboard" Icon="dotnet_bot.png">
+        <ShellContent
+            Title="Dashboard"
+            ContentTemplate="{DataTemplate local:Dashboard}"
+            Route="Dashboard" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Network" Icon="dotnet_bot.png">
+        <ShellContent
+            Title="Network"
+            ContentTemplate="{DataTemplate network:NetworkPage}"
+            Route="Network" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Camera" Icon="dotnet_bot.png">
+        <ShellContent
+            Title="Camera"
+            ContentTemplate="{DataTemplate camera:CameraDiscoveryPage}"
+            Route="Camera" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Diagnostics" Icon="dotnet_bot.png">
+        <ShellContent
+            Title="Diagnostics"
+            ContentTemplate="{DataTemplate diag:DiagnosticsPage}"
+            Route="Diagnostics" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Nmap" Icon="dotnet_bot.png">
+        <ShellContent
+            Title="Nmap"
+            ContentTemplate="{DataTemplate nmap:NmapPage}"
+            Route="Nmap" />
+    </FlyoutItem>
+
+</Shell>

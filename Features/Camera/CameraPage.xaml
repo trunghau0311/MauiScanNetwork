@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:MauiScannetwork.Features.Camera"
+             x:Class="MauiScannetwork.Features.Camera.CameraPage"
+             Title="Camera">
+
+    <Grid RowDefinitions="Auto,*" Padding="12">
+
+        <VerticalStackLayout Grid.Row="0" Spacing="8" Margin="0,0,0,10">
+            <Button x:Name="BtnScan"
+                    Text="SCAN CAMERA"
+                    Clicked="OnScanClicked"
+                    BackgroundColor="#0D47A1"
+                    TextColor="White"
+                    FontAttributes="Bold"
+                    CornerRadius="8"
+                    HeightRequest="50"
+                    HorizontalOptions="Fill" />
+            <Button x:Name="BtnPreview"
+                    Text="PREVIEW (Nhap IP)"
+                    Clicked="OnPreviewClicked"
+                    BackgroundColor="#00695C"
+                    TextColor="White"
+                    FontAttributes="Bold"
+                    CornerRadius="8"
+                    HeightRequest="45"
+                    HorizontalOptions="Fill" />
+            <Label x:Name="LblStatus" Text="Nhan SCAN de tim camera trong LAN" FontSize="14" TextColor="Gray" />
+        </VerticalStackLayout>
+
+        <CollectionView x:Name="CameraList" Grid.Row="1" SelectionMode="None">
+            <CollectionView.EmptyView>
+                <Label Text="Chua tim thay camera nao" TextColor="Gray" FontSize="15" HorizontalOptions="Center" Margin="0,30,0,0" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="local:CameraDevice">
+                    <Frame Margin="4,4" Padding="10" CornerRadius="8" BorderColor="#DDDDDD" HasShadow="false">
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="3">
+                            <Label Grid.Row="0" Grid.Column="0" Text="{Binding Ip}" FontAttributes="Bold" FontSize="16" LineBreakMode="NoWrap" />
+                            <Label Grid.Row="1" Grid.Column="0" Text="{Binding Mac}" FontSize="13" TextColor="Gray" LineBreakMode="NoWrap" />
+                            <Label Grid.Row="2" Grid.Column="0" Text="{Binding Vendor}" FontSize="13" TextColor="Gray" />
+                            <Button Grid.Row="0" Grid.RowSpan="3" Grid.Column="1"
+                                    Text="View"
+                                    Clicked="OnViewClicked"
+                                    CommandParameter="{Binding .}"
+                                    BackgroundColor="#1565C0"
+                                    TextColor="White"
+                                    FontAttributes="Bold"
+                                    FontSize="14"
+                                    CornerRadius="6"
+                                    HeightRequest="40"
+                                    WidthRequest="70"
+                                    VerticalOptions="Center" />
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+
+</ContentPage>
