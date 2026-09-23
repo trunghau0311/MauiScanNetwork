@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using LibVLCSharp.MAUI;
 
 namespace MauiScannetwork;
 
@@ -10,13 +9,6 @@ public static class MauiProgram
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
-			.UseLibVLCSharp()
-			.ConfigureMauiHandlers(handlers =>
-			{
-#if ANDROID
-				handlers.AddHandler<MauiScannetwork.Features.Camera.VideoPlayerView, MauiScannetwork.Platforms.Android.VideoPlayerViewHandler>();
-#endif
-			})
 			.ConfigureFonts(fonts =>
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
