@@ -136,67 +136,78 @@ public partial class NetworkPage : ContentPage
             {
                 var context = Android.App.Application.Context;
                 var cm = context.GetSystemService(Context.ConnectivityService) as ConnectivityManager;
-                if (cm == null) return;
 
-                Android.Net.Network targetNetwork = null;
-                Android.Net.NetworkCapabilities targetCaps = null;
+                var details = new NetworkDetails();
+                string? ifaceName = null;
 
-                if (!OperatingSystem.IsAndroidVersionAtLeast(23)) return;
-
-                var networks = cm.GetAllNetworks();
-                if (networks == null) return;
-
-                foreach (var net in networks)
+                if (cm != null)
                 {
-                    var caps = cm.GetNetworkCapabilities(net);
-                    if (caps == null) continue;
-
-                    bool match = type switch
+                    var networks = cm.GetAllNetworks();
+                    if (networks != null)
                     {
-                        NetworkType.Wifi => caps.HasTransport(Android.Net.TransportType.Wifi),
-                        NetworkType.Mobile => caps.HasTransport(Android.Net.TransportType.Cellular),
-                        NetworkType.Ethernet => OperatingSystem.IsAndroidVersionAtLeast(28)
-                            && caps.HasTransport(Android.Net.TransportType.Ethernet),
-                        _ => false
-                    };
-
-                    // Fallback for Ethernet: check interface name
-                    if (!match && type == NetworkType.Ethernet)
-                    {
-                        var lp = cm.GetLinkProperties(net);
-                        if (lp?.InterfaceName != null)
+                        // Pass 1: match by interface NAME first (reliable on Android/Oppo;
+                        // NetworkInterfaceType.Ethernet often labels wlan0 as Ethernet too).
+                        foreach (var net in networks)
                         {
-                            var iface = lp.InterfaceName.ToLower();
-                            if (iface.StartsWith("eth") || iface.StartsWith("usb") ||
-                                iface.StartsWith("rndis") || iface.Contains("lan"))
-                                match = true;
+                            var lp = cm.GetLinkProperties(net);
+                            if (lp?.InterfaceName == null) continue;
+                            if (!InterfaceMatchesName(lp.InterfaceName, type)) continue;
+
+                            var cand = GetDetailsFromLinkProperties(lp, type);
+                            if (string.IsNullOrEmpty(details.Ip))
+                            {
+                                details = cand;
+                                ifaceName = lp.InterfaceName;
+                            }
+                        }
+
+                        // Pass 2: fallback by transport capability (interface names unknown)
+                        if (details.Ip == null)
+                        {
+                            foreach (var net in networks)
+                            {
+                                var caps = cm.GetNetworkCapabilities(net);
+                                if (caps == null) continue;
+
+                                bool match = type switch
+                                {
+                                    NetworkType.Wifi => caps.HasTransport(Android.Net.TransportType.Wifi),
+                                    NetworkType.Mobile => caps.HasTransport(Android.Net.TransportType.Cellular),
+                                    NetworkType.Ethernet => OperatingSystem.IsAndroidVersionAtLeast(28)
+                                        && caps.HasTransport(Android.Net.TransportType.Ethernet),
+                                    _ => false
+                                };
+                                if (!match) continue;
+
+                                var lp = cm.GetLinkProperties(net);
+                                var cand = GetDetailsFromLinkProperties(lp, type);
+                                details = cand;
+                                ifaceName = lp?.InterfaceName;
+                                break;
+                            }
                         }
                     }
+                }
 
-                    if (match)
+                // Pass 3: NetworkInterface enumeration fallback (Oppo USB-C LAN case,
+                // where ConnectivityManager may not report the wired interface).
+                if (details.Ip == null)
+                {
+                    var fallback = GetDetailsFromNetworkInterface(type);
+                    if (fallback.Ip != null)
                     {
-                        targetNetwork = net;
-                        targetCaps = caps;
-                        break;
+                        details = fallback;
+                        ifaceName = fallback.Iface ?? ifaceName;
                     }
                 }
 
-                if (targetNetwork == null) return;
-
-                var linkProps = cm.GetLinkProperties(targetNetwork);
-                var details = GetDetailsFromLinkProperties(linkProps, type);
-
-                // If no link properties (Oppo USB-C LAN case), try NetworkInterface fallback
-                if (string.IsNullOrEmpty(details.Ip) && type == NetworkType.Ethernet)
-                {
-                    details = GetDetailsFromNetworkInterface(type);
-                }
-
+                var finalIface = ifaceName;
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
                     switch (type)
                     {
                         case NetworkType.Wifi:
+                            LblWifiIface.Text = string.IsNullOrEmpty(finalIface) ? "" : finalIface;
                             LblWifiIp.Text = $"IP: {details.Ip ?? "Khong lay duoc"}";
                             LblWifiSubnet.Text = $"Subnet: {details.Subnet ?? "Khong lay duoc"}";
                             LblWifiGateway.Text = $"Gateway: {details.Gateway ?? "Khong lay duoc"}";
@@ -205,6 +216,7 @@ public partial class NetworkPage : ContentPage
                             break;
 
                         case NetworkType.Mobile:
+                            LblMobileIface.Text = string.IsNullOrEmpty(finalIface) ? "" : finalIface;
                             LblMobileIp.Text = $"IP: {details.Ip ?? "Khong lay duoc"}";
                             LblMobileSubnet.Text = $"Subnet: {details.Subnet ?? "Khong lay duoc"}";
                             LblMobileGateway.Text = $"Gateway: {details.Gateway ?? "Khong lay duoc"}";
@@ -213,6 +225,7 @@ public partial class NetworkPage : ContentPage
                             break;
 
                         case NetworkType.Ethernet:
+                            LblUsbIface.Text = string.IsNullOrEmpty(finalIface) ? "" : finalIface;
                             LblUsbIp.Text = $"IP: {details.Ip ?? "Khong lay duoc"}";
                             LblUsbSubnet.Text = $"Subnet: {details.Subnet ?? "Khong lay duoc"}";
                             LblUsbGateway.Text = $"Gateway: {details.Gateway ?? "Khong lay duoc"}";
@@ -233,6 +246,22 @@ public partial class NetworkPage : ContentPage
         public string? Gateway { get; set; }
         public string? Dns { get; set; }
         public string? Extra { get; set; }
+        public string? Iface { get; set; }
+    }
+
+    private static bool InterfaceMatchesName(string iface, NetworkType type)
+    {
+        var name = iface.ToLowerInvariant();
+        return type switch
+        {
+            NetworkType.Wifi => name.StartsWith("wlan") || name.StartsWith("wlp"),
+            NetworkType.Mobile => name.StartsWith("rmnet") || name.StartsWith("ccmni")
+                || name.StartsWith("pdp") || name.StartsWith("cell")
+                || name.StartsWith("wwan"),
+            NetworkType.Ethernet => name.StartsWith("eth") || name.StartsWith("usb")
+                || name.StartsWith("rndis") || name.Contains("lan"),
+            _ => false
+        };
     }
 
     private NetworkDetails GetDetailsFromLinkProperties(LinkProperties? lp, NetworkType type)
@@ -318,29 +347,32 @@ public partial class NetworkPage : ContentPage
                 if (iface.OperationalStatus != OperationalStatus.Up) continue;
                 if (iface.NetworkInterfaceType == NetworkInterfaceType.Loopback) continue;
 
-                bool match = type switch
+                bool match;
+                if (type == NetworkType.Wifi)
                 {
-                    NetworkType.Wifi => iface.NetworkInterfaceType == NetworkInterfaceType.Wireless80211,
-                    NetworkType.Mobile => iface.NetworkInterfaceType == NetworkInterfaceType.Unknown,
-                    NetworkType.Ethernet => iface.NetworkInterfaceType == NetworkInterfaceType.Ethernet
+                    match = InterfaceMatchesName(iface.Name, type)
+                        || iface.NetworkInterfaceType == NetworkInterfaceType.Wireless80211;
+                }
+                else if (type == NetworkType.Mobile)
+                {
+                    match = InterfaceMatchesName(iface.Name, type);
+                }
+                else
+                {
+                    match = InterfaceMatchesName(iface.Name, type)
+                        || iface.NetworkInterfaceType == NetworkInterfaceType.Ethernet
                         || iface.NetworkInterfaceType == NetworkInterfaceType.FastEthernetFx
-                        || iface.NetworkInterfaceType == NetworkInterfaceType.GigabitEthernet,
-                    _ => false
-                };
-
-                if (!match && type == NetworkType.Mobile)
-                {
-                    var name = iface.Name.ToLower();
-                    if (name.StartsWith("rmnet") || name.StartsWith("ccmni") || name.StartsWith("pdp"))
-                        match = true;
+                        || iface.NetworkInterfaceType == NetworkInterfaceType.GigabitEthernet
+                        || iface.NetworkInterfaceType == NetworkInterfaceType.FastEthernetT;
                 }
 
-                if (!match && type == NetworkType.Ethernet)
+                // Quan trọng: network không dây (wlan/wlp) KHÔNG được tính là Ethernet
+                // dù Android báo NetworkInterfaceType.Ethernet cho wlan0.
+                if (type == NetworkType.Ethernet
+                    && (iface.Name.ToLowerInvariant().StartsWith("wlan")
+                        || iface.Name.ToLowerInvariant().StartsWith("wlp")))
                 {
-                    var name = iface.Name.ToLower();
-                    if (name.Contains("eth") || name.Contains("usb") ||
-                        name.Contains("rndis") || name.Contains("lan"))
-                        match = true;
+                    match = false;
                 }
 
                 if (!match) continue;
@@ -379,6 +411,8 @@ public partial class NetworkPage : ContentPage
                 if (dnsList.Count > 0)
                     details.Dns = string.Join(", ", dnsList);
 
+                details.Iface = iface.Name;
+
                 if (!string.IsNullOrEmpty(details.Ip))
                     break;
             }
@@ -409,18 +443,21 @@ public partial class NetworkPage : ContentPage
 
     private void ResetLabels()
     {
+        LblWifiIface.Text = "";
         LblWifiIp.Text = "IP: --";
         LblWifiSubnet.Text = "Subnet: --";
         LblWifiGateway.Text = "Gateway: --";
         LblWifiDns.Text = "DNS: --";
         LblWifiStatus.Text = "Trang thai: --";
 
+        LblMobileIface.Text = "";
         LblMobileIp.Text = "IP: --";
         LblMobileSubnet.Text = "Subnet: --";
         LblMobileGateway.Text = "Gateway: --";
         LblMobileDns.Text = "DNS: --";
         LblMobileStatus.Text = "Trang thai: --";
 
+        LblUsbIface.Text = "";
         LblUsbIp.Text = "IP: --";
         LblUsbSubnet.Text = "Subnet: --";
         LblUsbGateway.Text = "Gateway: --";

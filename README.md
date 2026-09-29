@@ -37,7 +37,7 @@ MauiScannetwork/
 ├── MauiProgram.cs                  # Khởi động app: đăng ký fonts
 ├── App.xaml / App.xaml.cs          # Application root, merge Styles/Colors
 ├── AppShell.xaml / .xaml.cs        # Shell 1 trang Network + đăng ký Route
-├── MauiScannetwork.csproj          # Cấu hình project, packages
+├── MauiScannetwork.csproj          # Cấu hình project, packages, icon+splash
 │
 ├── Features/
 │   └── Network/
@@ -51,9 +51,11 @@ MauiScannetwork/
 │       └── MainApplication.cs
 │
 └── Resources/
-    ├── Styles/Colors.xaml          # Bảng màu
+    ├── Styles/Colors.xaml          # Bảng màu (navy/gold chủ đạo)
     ├── Styles/Styles.xaml          # Style chung
-    ├── Images/dotnet_bot.png       # Icon (tạm thời)
+    ├── AppIcon/appicon.svg(.fg)    # Icon app: nền navy + sóng WiFi (foreground)
+    ├── Splash/splash.svg           # Splash screen: sóng WiFi trắng trên nền navy
+    ├── Images/wifi_logo.svg        # Logo sóng WiFi trắng (đầu trang Network)
     ├── AppIcon/ Splash/ Fonts/ Raw/
 ```
 
@@ -72,7 +74,8 @@ MauiScannetwork/
 
 ### Network — Kiểm tra thông tin mạng
 - File: `Features/Network/NetworkPage.xaml(.cs)`
-- Chức năng: nhấn nút **CHECK** → dò tìm và hiển thị thông tin (IP, Subnet, Gateway, DNS, trạng thái) của tối đa **3 loại kết nối**:
+- Giao diện phong cách **cổ điển**: nền navy `#16335F` + vàng gold `#C9A227`, header có logo sóng WiFi trắng (`wifi_logo.png`), nút KIEM TRA màu vàng, các khung kết nối là card bo góc với vạch màu dọc bên trái (màu xanh dương / xanh lá / cam).
+- Chức năng: nhấn nút **KIEM TRA** → dò tìm và hiển thị thông tin (IP, Subnet, Gateway, DNS, trạng thái) của tối đa **3 loại kết nối**:
 
 | Khung | Loại | Màu nền Frame |
 |---|---|---|
@@ -106,10 +109,28 @@ INTERNET
 
 ### Cấu hình APK (`MauiScannetwork.csproj`)
 - `EmbedAssembliesIntoApk=true` và `AndroidFastDeploymentType=None` → build APK đầy đủ để cài trực tiếp (sideload), không cần deploy qua IDE.
+- `MauiIcon`: `appicon.svg` (nền navy + viền vàng) + foreground `appiconfg.svg` (sóng WiFi trắng), màu nền `#16335F`.
+- `MauiSplashScreen`: `splash.svg` (sóng WiFi trắng), màu nền `#16335F`.
 
 ---
 
 ## 6. Trạng thái debug
+
+### [23/09/2026] Fix: phân biệt WiFi vs USB-LAN hiển thị
+- **Bug**: khi bật WiFi mà vẫn cắm USB-to-LAN, 2 card hiển thị **cùng 1 giá trị IP**. Nguyên nhân: Android thường báo `wlan0` (WiFi) có `NetworkInterfaceType.Ethernet` → hàm fallback match nhầm WiFi vào card USB-C/LAN.
+- **Fix** (`NetworkPage.xaml.cs`):
+  - Thêm `InterfaceMatchesName()` — phân loại theo **tên interface trước**: `wlan*/wlp*` = WiFi; `rmnet/ccmni/pdp/cell/wwan` = Mobile; `eth*/usb*/rndis*`/`lan` = Ethernet.
+  - `LoadNetworkDetails` đổi thành 3 pass: **Pass 1** match theo tên interface trong `ConnectivityManager`; **Pass 2** fallback theo transport capability; **Pass 3** `GetDetailsFromNetworkInterface` (loại trừ wlan/wlp khỏi Ethernet dù type báo Ethernet).
+  - Thêm label `LblWifiIface/LblMobileIface/LblUsbIface` hiển thị **tên interface thật** (vd `wlan0`, `usb0`) ở góc phải mỗi card để dễ đối chiếu.
+- **Đã build Release OK — 0 lỗi.** APK mới trong `bin\Release\net9.0-android\`.
+
+### [23/09/2026] Tùy chỉnh giao diện phong cách cổ điển
+- Giao diện app đổi sang phong cách **cổ điển**: màu navy `#16335F` + vàng gold `#C9A227` (header, app bar, nút bấm), nền trang màu giấy `#F5F1E8`, các khung kết nối dạng card bo góc với vạch màu dọc trái (xanh dương WiFi / xanh lá Mobile / cam USB-LAN).
+- **Icon app** mới: hình **sóng WiFi** — nền navy, foreground sóng WiFi trắng (SVG: `Resources/AppIcon/appicon.svg` + `appiconfg.svg`).
+- **Splash screen** mới: sóng WiFi trắng trên nền navy (`Resources/Splash/splash.svg`).
+- `Colors.xaml`: `Primary` = `#16335F`, `Secondary`/`PrimaryDark` = `#C9A227`; `Shell` style navy + gold.
+- `Platforms/Android/Resources/values/colors.xml`: `colorPrimary` navy, `colorAccent` gold.
+- **Đã build Release thành công — 0 lỗi** (9 warning cũ, không phát sinh mới). APK: `bin\Release\net9.0-android\com.companyname.mauiscannetwork-Signed.apk`.
 
 ### [23/09/2026] Thu gọn app — chỉ còn Network
 - Đã **xoá hoàn toàn** các menu và feature `Camera`, `Diagnostics`, `Nmap`, `Dashboard` như yêu cầu:
